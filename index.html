@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Barcode Scanner Test</title>
+    <script src="https://unpkg.com/quagga/dist/quagga.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.5"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .scanner-container {
+            margin-bottom: 40px;
+        }
+        video {
+            border: 1px solid #ddd;
+            max-width: 100%;
+            height: auto;
+        }
+        .scanner-container h2 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Live Barcode Scanner Test</h1>
+
+    <!-- Quagga Scanner -->
+    <div class="scanner-container" id="quaggaScanner">
+        <h2>QuaggaJS Scanner</h2>
+        <video id="quaggaVideo" width="400" height="300" autoplay></video>
+        <div id="quaggaResult"></div>
+    </div>
+
+    <!-- ZXing Scanner -->
+    <div class="scanner-container" id="zxingScanner">
+        <h2>ZXing Scanner</h2>
+        <video id="zxingVideo" width="400" height="300" autoplay></video>
+        <div id="zxingResult"></div>
+    </div>
+
+    <script>
+        // QuaggaJS Scanner
+        function startQuaggaScanner() {
+            const videoElement = document.getElementById("quaggaVideo");
+            const resultElement = document.getElementById("quaggaResult");
+
+            // Check for camera permission and start QuaggaJS
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(function(stream) {
+                        videoElement.srcObject = stream;
+
+                        // Initialize QuaggaJS after stream is ready
+                        Quagga.init({
+                            inputStream: {
+                                name: "Live",
+                                type: "LiveStream",
+                                target: videoElement, // Set target to the video element
+                                constraints: {
+                                    facingMode: "environment" // Use the rear camera
+                                }
+                            },
+                            decoder: {
+                                readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader", "code_39_reader"]
+                            }
+                        }, function(err) {
+                            if (err) {
+                                console.log(err);
+                                return;
+                            }
+                            Quagga.start();
+                        });
+
+                        // Handle the detected barcode result
+                        Quagga.onDetected(function(result) {
+                            resultElement.innerText = `Detected Barcode (Quagga): ${result.codeResult.code}`;
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error("Camera access denied or error occurred: ", error);
+                    });
+            } else {
+                alert("Camera access is not supported in this browser.");
+            }
+        }
+
+        // ZXing Scanner
+        const zxingVideo = document.getElementById("zxingVideo");
+        const zxingResultElement = document.getElementById("zxingResult");
+        const codeReader = new ZXing.BrowserMultiFormatReader();
+
+        function startZXingScanner() {
+            // Check for camera permission and start ZXing scanning
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(function(stream) {
+                        zxingVideo.srcObject = stream;
+
+                        // Start ZXing scanning using the live video feed
+                        codeReader.decodeFromVideoDevice(null, zxingVideo, (result, error) => {
+                            if (result) {
+                                zxingResultElement.innerText = `Detected Barcode (ZXing): ${result.getText()}`;
+                            }
+                            if (error) {
+                                zxingResultElement.innerText = "Error: No barcode detected.";
+                            }
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error("Camera access denied or error occurred: ", error);
+                    });
+            } else {
+                alert("Camera access is not supported in this browser.");
+            }
+        }
+
+        // Start both scanners on page load
+        startQuaggaScanner();
+        startZXingScanner();
+    </script>
+
+</body>
+</html>
