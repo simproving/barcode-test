@@ -43,6 +43,23 @@
     </div>
 
     <script>
+        function isValidEAN13(ean) {
+            if (!/^\d{13}$/.test(ean)) {
+                return false; // Must be 13 digits
+            }
+
+            const digits = ean.split('').map(Number);
+            let sum = 0;
+
+            for (let i = 0; i < 12; i++) {
+                sum += (i % 2 === 0) ? digits[i] : digits[i] * 3;
+            }
+
+            const checkDigit = (10 - (sum % 10)) % 10;
+
+            return checkDigit === digits[12];
+        }
+
         // QuaggaJS Scanner
         function startQuaggaScanner() {
             const videoElement = document.getElementById("quaggaVideo");
@@ -61,11 +78,20 @@
                                 type: "LiveStream",
                                 target: videoElement, // Set target to the video element
                                 constraints: {
-                                    facingMode: "environment" // Use the rear camera
-                                }
+                                    facingMode: "environment", // Use the rear camera
+                                    width: 1920,
+                                    height: 1080,
+                                },
+                                frequency: 30,
                             },
                             decoder: {
-                                readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader", "code_39_reader"]
+                                readers: [ "ean_reader"],
+                                debug: {
+                                    drawBoundingBox: true,
+                                    showFrequency: true,
+                                    drawScanline: true,
+                                    showPattern: true
+                                }
                             }
                         }, function(err) {
                             if (err) {
